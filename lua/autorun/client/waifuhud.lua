@@ -228,13 +228,13 @@ waifuhud.initialize = function()
         local path = waifuhud.folder .. name
         if file.Exists( path, "DATA" ) then continue end
 
-        local content = file.Read( "data_static/" .. name, "GAME" )
+        local content = file.Read( "data_static/" .. name:gsub( ".png", ".dat" ), "GAME" )
 
         if content then
             file.Write( path, content )
             print( "[waifuhud] " .. path .. " saved to user data" )
         else
-            print( "[waifuhud] ERROR: Failed to read the file " .. naem )
+            print( "[waifuhud] ERROR: Failed to read the file " .. name )
         end
     end
 
