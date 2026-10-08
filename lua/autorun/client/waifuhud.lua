@@ -23,7 +23,7 @@ waifuhud.colors = {
 }
 
 waifuhud.cv_enabled = CreateConVar( "waifuhud_enabled", 1, FCVAR_ARCHIVE, "Waifuhud enabled", 0, 1 )
-waifuhud.cv_left = CreateConVar( "waifuhud_left", 1, FCVAR_ARCHIVE, "Waifu ont the left", 0, #waifuhud.files )
+waifuhud.cv_left = CreateConVar( "waifuhud_left", 1, FCVAR_ARCHIVE, "Waifu on the left", 0, #waifuhud.files )
 waifuhud.cv_right = CreateConVar( "waifuhud_right", 3, FCVAR_ARCHIVE, "Waifu on the right", 0, #waifuhud.files )
 waifuhud.cv_size = CreateConVar( "waifuhud_size", 330, FCVAR_ARCHIVE, "Waifu size", 0, 512 )
 waifuhud.cv_customhud = CreateConVar( "waifuhud_customhud", 1, FCVAR_ARCHIVE, "Waifuhud custom hud", 0, 1 )
@@ -148,7 +148,6 @@ surface.CreateFont( "waifuhudSmall", {
 local math_max = math.max
 local math_min = math.min
 local draw_SimpleText = draw.SimpleText
-local AmmoTypes
 
 -- ХТМЛ
 local htmlcode = [[
@@ -174,6 +173,7 @@ local htmlcode = [[
 ]]
 
 
+-- Функции да
 waifuhud.switch = function()
     if waifuhud.cv_enabled:GetBool() then
         waifuhud.initialize()
@@ -190,7 +190,7 @@ end
 waifuhud.changed = function( name )
     if not waifuhud.cv_enabled:GetBool() then return end
 
-    val = GetConVarNumber( name )
+    local val = GetConVarNumber( name )
 
     if name == "waifuhud_size" then
         sw = ScrW()
@@ -237,8 +237,6 @@ waifuhud.initialize = function()
         return
     end
 
-    AmmoTypes = game.GetAmmoTypes()
-
     -- Создание папки, если её не существует
     if not file.Exists( waifuhud.folder, "DATA" ) then
         file.CreateDir( waifuhud.folder )
@@ -258,7 +256,7 @@ waifuhud.initialize = function()
         local path = waifuhud.folder .. name
         if file.Exists( path, "DATA" ) then continue end
 
-        local content = file.Read( "data_static/" .. name:gsub( ".png", ".dat" ), "GAME" )
+        local content = file.Read( "data_static/" .. name:gsub( "%.png$", ".dat" ), "GAME" )
 
         if content then
             file.Write( path, content )
@@ -314,13 +312,16 @@ waifuhud.initialize = function()
     local wep, wep1, wep1a, wep1b, wep2, wep2a, wep2b
     local tw, th, lo, ro, clrl, clrr
 
+    waifuhud.color_left = waifuhud.colors[ indexleft ] or waifuhud.colors[ 1 ]
+    waifuhud.color_right = waifuhud.colors[ indexright ] or waifuhud.colors[ 1 ]
+
     hook.Add( "HUDPaint", "waifuhud:hud", function()
         if not waifuhud.cv_customhud:GetBool() then return end
 
         lp = LocalPlayer()
         if not IsValid( lp ) then return end
 
-        lo = math_max( 50, size )
+        lo = math_max( 50, waifuhud.cv_left:GetInt() ~= 0 and size or 0 )
         clrl = waifuhud.color_left
 
         -- Здоровье
@@ -347,7 +348,7 @@ waifuhud.initialize = function()
         wep = lp:GetActiveWeapon()
 
         if IsValid( wep ) then
-            ro = math_min( sw - 50, sw - size )
+            ro = sw - math_max( 50, waifuhud.cv_right:GetInt() ~= 0 and size or 0 )
             clrr = waifuhud.color_right
             
             wep1a = wep:GetMaxClip1() or -1
@@ -367,7 +368,7 @@ waifuhud.initialize = function()
 
             if wep2a > 0 then
                 wep2a = tostring( wep2a )
-                wep2b = tostring( AmmoTypes[ wep:GetPrimaryAmmoType() ] or "miku" )
+                wep2b = game.GetAmmoName( wep:GetPrimaryAmmoType() ) or "miku"
 
                 draw_SimpleText( wep2a, "waifuhudMediumGlow", ro, sh - 35, clrr, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
                 draw_SimpleText( wep2a, "waifuhudMedium", ro, sh - 35, clrr, TEXT_ALIGN_RIGHT, TEXT_ALIGN_BOTTOM )
@@ -383,6 +384,7 @@ waifuhud.initialize = function()
         CHudBattery = true,
         CHudAmmo = true,
         CHudSecondaryAmmo = true,
+        CHudSuitPower = true,
     }
 
     hook.Add( "HUDShouldDraw", "waifuhud:hide", function( name )
@@ -421,5 +423,5 @@ cvars.AddChangeCallback( "waifuhud_left", waifuhud.changed, "waifuhud_left_cb" )
 cvars.AddChangeCallback( "waifuhud_right", waifuhud.changed, "waifuhud_right_cb" )
 cvars.AddChangeCallback( "waifuhud_size", waifuhud.changed, "waifuhud_size_cb" )
 
-hook.Add( "Initialize", "waifuhud:initialize", function() timer.Simple( 1, waifuhud.initialize ) end )
+hook.Add( "InitPostEntity", "waifuhud:initialize", waifuhud.initialize )
 concommand.Add( "waifuhud_restart", waifuhud.initialize )
